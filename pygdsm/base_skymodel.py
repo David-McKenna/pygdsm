@@ -3,6 +3,7 @@ import h5py
 import healpy as hp
 from astropy.io import fits
 from .plot_utils import show_plt
+from astropy import units
 
 def is_fits(filepath):
     """
@@ -57,7 +58,73 @@ class BaseSkyModel(object):
         self.generated_map_data = None
         self.generated_map_freqs = None
 
-    def generate(self, freqs):
+    def generate(self, freqs, reset_cache = False):
+        """ Generate a global sky model at a given frequency or frequencies
+
+        Parameters
+        ----------
+        freqs: float or np.array
+            Frequency for which to return GSM model
+
+        reset_cache: bool
+            Remove the existing caches from memory for this model
+
+        Returns
+        -------
+        gsm: np.array
+            Global sky model in healpix format, with NSIDE=1024. Output map
+            is in galactic coordinates, ring format.
+
+        """
+
+        if reset_cache:
+            del self.generated_map_data
+            del self.generated_map_freqs
+            self.generated_map_data = None
+            self.generated_map_freqs = None
+
+
+        # Convert value into the model's set frequency units
+        freqs = np.array([freqs]).ravel() * units.Unit(self.freq_unit)
+
+        if self.generated_map_freqs is None:
+            exisiting_map_freqs = 0
+            freqs_to_generate = freqs.copy()
+        else:
+            exisiting_map_freqs = self.generated_map_freqs.size
+            freqs_to_generate = []
+            for freq in freqs:
+                if freq.value in self.generated_map_freqs.value:
+                    continue
+                freqs_to_generate.append(freq.value)
+            freqs_to_generate = np.array(freqs_to_generate).ravel() * units.Unit(self.freq_unit)
+
+        if len(freqs_to_generate):
+            freqs_mhz = freqs_to_generate.to('MHz').value
+            map_out = self._generate(freqs_mhz).squeeze()
+
+            if exisiting_map_freqs:
+                self.generated_map_data = np.resize(self.generated_map_data, (exisiting_map_freqs + len(freqs_to_generate), self.generated_map_data.shape[-1]))
+                self.generated_map_freqs = np.resize(self.generated_map_freqs, (exisiting_map_freqs + len(freqs_to_generate)))
+            else:
+                self.generated_map_data = np.zeros_like(map_out)
+                self.generated_map_freqs = np.zeros_like(freqs_to_generate)
+
+            if self.generated_map_data.ndim == 2:
+                self.generated_map_data[exisiting_map_freqs:, :] = map_out
+                self.generated_map_freqs[exisiting_map_freqs:] = freqs_to_generate
+            else:
+                self.generated_map_data = map_out.copy()
+                self.generated_map_freqs = freqs_to_generate.copy()
+
+        if freqs.size > 1 or self.generated_map_freqs.size > 1:
+            map_out = self.generated_map_data[[np.argwhere(self.generated_map_freqs == freq).item() for freq in freqs], :].squeeze()
+        else:
+            map_out = self.generated_map_data
+
+        return map_out
+
+    def _generate(self, freq_mhz):
         raise NotImplementedError
 
     def view(self, idx=0, logged=False, show=False):
@@ -111,13 +178,13 @@ class BaseSkyModel(object):
         T_cmb = 2.725 if include_cmb else 0
         
         if freqs is not None:
-            self.generate(freqs)
+            map_data = self.generate(freqs)
 
         pix = hp.ang2pix(self.nside, coords.galactic.l.deg, coords.galactic.b.deg, lonlat=True)
-        if self.generated_map_data.ndim == 2:
-            return self.generated_map_data[:, pix] + T_cmb
+        if map_data.ndim == 2:
+            return map_data[:, pix] + T_cmb
         else:
-            return self.generated_map_data[pix] + T_cmb
+            return map_data[pix] + T_cmb
 
 
     def write_fits(self, filename):

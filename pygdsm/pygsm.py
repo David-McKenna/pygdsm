@@ -21,7 +21,6 @@ PCA data from: space.mit.edu/home/angelica/gsm
 import numpy as np
 from scipy.interpolate import interp1d, pchip
 import h5py
-from astropy import units
 import healpy as hp
 
 
@@ -122,7 +121,7 @@ class GlobalSkyModel(BaseSkyModel):
             spl3 = pchip(ln_pca_freqs,   pca_comps[2])
         self.interp_comps = (spl_scaling, spl1, spl2, spl3)
 
-    def generate(self, freqs):
+    def _generate(self, freqs_mhz):
         """ Generate a global sky model at a given frequency or frequencies
 
         Parameters
@@ -137,13 +136,6 @@ class GlobalSkyModel(BaseSkyModel):
             is in galactic coordinates, and in antenna temperature units (K).
 
         """
-        # convert frequency values into Hz
-        freqs = np.array(freqs) * units.Unit(self.freq_unit)
-        freqs_mhz = freqs.to('MHz').value
-
-        if isinstance(freqs_mhz, float):
-            freqs_mhz = np.array([freqs_mhz])
-
         try:
             assert np.min(freqs_mhz) >= 10
             assert np.max(freqs_mhz) <= 94000
@@ -161,29 +153,25 @@ class GlobalSkyModel(BaseSkyModel):
         #print comps.shape, self.pca_map_data.shape, scaling.shape
         map_out = np.einsum('cf,pc,f->fp', comps, self.pca_map_data, scaling)
 
-        if map_out.shape[0] == 1:
-            map_out = map_out[0]
-        self.generated_map_data = map_out
-        self.generated_map_freqs = freqs
         return map_out
 
     def set_basemap(self, new_basemap):
         self.basemap = new_basemap
         self.update_interpolants()
         if self.generated_map_freqs is not None:
-            self.generate(self.generated_map_freqs)
+            self.generate(self.generated_map_freqs.copy(), reset_cache = True)
 
     def set_freq_unit(self, new_unit):
         self.freq_unit = new_unit
         self.update_interpolants()
         if self.generated_map_freqs is not None:
-            self.generate(self.generated_map_freqs)
+            self.generate(self.generated_map_freqs.copy(), reset_cache = True)
 
     def set_interpolation_method(self, new_method):
         self.interpolation_method = new_method
         self.update_interpolants()
         if self.generated_map_freqs is not None:
-            self.generate(self.generated_map_freqs)
+            self.generate(self.generated_map_freqs.copy(), reset_cache = True)
 
 
 class GSMObserver(BaseObserver):

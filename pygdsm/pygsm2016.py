@@ -1,6 +1,5 @@
 import numpy as np
 import h5py
-from astropy import units
 import healpy as hp
 import ephem
 
@@ -100,7 +99,7 @@ class GlobalSkyModel2016(BaseSkyModel):
             for i,map in enumerate(self.map_ni):
                 self.map_ni[i] = rotate_map(map, theta_rot, phi_rot, nest=True)
 
-    def generate(self, freqs):
+    def _generate(self, freqs_mhz):
         """ Generate a global sky model at a given frequency or frequencies
 
         Parameters
@@ -115,13 +114,7 @@ class GlobalSkyModel2016(BaseSkyModel):
             is in galactic coordinates, ring format.
 
         """
-
-        # convert frequency values into Hz
-        freqs = np.array(freqs) * units.Unit(self.freq_unit)
-        freqs_ghz = freqs.to('GHz').value
-
-        if isinstance(freqs_ghz, float):
-            freqs_ghz = np.array([freqs_ghz])
+        freqs_ghz = freqs_mhz / 1e3
 
         try:
             assert np.min(freqs_ghz) >= 0.01
@@ -169,14 +162,8 @@ class GlobalSkyModel2016(BaseSkyModel):
             output[ifreq] *= conversion
 
 #            output.append(result)
-
-        if len(output) == 1:
-            output = output[0]
         #else:
         #    map_data = np.row_stack(output)
-
-        self.generated_map_freqs = freqs
-        self.generated_map_data = output
 
         return output
 

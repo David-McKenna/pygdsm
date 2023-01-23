@@ -1,5 +1,4 @@
 import numpy as np
-from astropy import units
 import healpy as hp
 from scipy.interpolate import interp1d
 
@@ -45,7 +44,7 @@ class LowFrequencySkyModel(BaseSkyModel):
         for i in range(comps.shape[1]):
             self.compFuncs.append(interp1d(np.log(freqs), comps[:, i], kind='cubic'))
 
-    def generate(self, freqs):
+    def _generate(self, freqs_mhz):
         """ Generate a global sky model at a given frequency or frequencies
 
         Parameters
@@ -60,13 +59,6 @@ class LowFrequencySkyModel(BaseSkyModel):
             is in galactic coordinates, and in antenna temperature units (K).
 
         """
-        # convert frequency values into Hz
-        freqs = np.array(freqs) * units.Unit(self.freq_unit)
-        freqs_mhz = freqs.to('MHz').value
-
-        if isinstance(freqs_mhz, float):
-            freqs_mhz = np.array([freqs_mhz])
-
         try:
             assert np.min(freqs_mhz) >= 10
             assert np.max(freqs_mhz) <= 408
@@ -74,9 +66,9 @@ class LowFrequencySkyModel(BaseSkyModel):
             raise RuntimeError("Frequency values lie outside 10 MHz < f < 408 MHz")
 
         map_out = 0.0
-        if isinstance(freqs, np.ndarray):
-            if freqs.ndim > 0:
-                map_out = np.zeros(shape=(freqs.shape[0], hp.nside2npix(self.nside)))
+        if isinstance(freqs_mhz, np.ndarray):
+            if freqs_mhz.ndim > 0:
+                map_out = np.zeros(shape=(freqs_mhz.shape[0], hp.nside2npix(self.nside)))
             else:
                 map_out = np.zeros(shape=(1, hp.nside2npix(self.nside))) 
         else:
@@ -89,10 +81,8 @@ class LowFrequencySkyModel(BaseSkyModel):
 
             map_out[ff] =  rotate_equatorial_to_galactic(map_out[ff])
 
-        map_out = map_out.squeeze()
-        self.generated_map_data = map_out
-        self.generated_map_freqs = freqs
         return map_out
+
 
 
 class LFSMObserver(BaseObserver):

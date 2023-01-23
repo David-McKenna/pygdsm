@@ -1,5 +1,4 @@
 import numpy as np
-from astropy import units
 import healpy as hp
 from scipy.interpolate import interp1d
 
@@ -53,7 +52,7 @@ class HaslamSkyModel(BaseSkyModel):
         self.data = hp.read_map(self.fits, verbose=False, dtype=np.float64) - T_cmb
         self.nside = 512
 
-    def generate(self, freqs):
+    def _generate(self, freqs_mhz):
         """ Generate a global sky model at a given frequency or frequencies
 
         Parameters
@@ -68,18 +67,7 @@ class HaslamSkyModel(BaseSkyModel):
             is in galactic coordinates, and in antenna temperature units (K).
 
         """
-        # convert frequency values into Hz
-        freqs = np.array(freqs) * units.Unit(self.freq_unit)
-        freqs_mhz = freqs.to('MHz').value
-
-        if isinstance(freqs_mhz, float):
-            freqs_mhz = np.array([freqs_mhz])
-
-        map_out = np.outer((freqs_mhz / 408.0) ** (self.spectral_index), self.data).squeeze()
-
-        self.generated_map_data = map_out
-        self.generated_map_freqs = freqs
-        return map_out
+        return np.outer((freqs_mhz / 408.0) ** (self.spectral_index), self.data)
 
 
 class HaslamObserver(BaseObserver):
