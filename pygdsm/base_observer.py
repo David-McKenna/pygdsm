@@ -61,7 +61,7 @@ class BaseObserver(ephem.Observer):
         # Check to see if frequency has changed.
         if freq is not None: 
             if not np.isclose(freq, self._freq):
-                self.gsm.generate(freq, reset_cache = True)
+                self.gsm.generate(freq)
                 self._freq = freq
         
         sky = self.gsm.generated_map_data

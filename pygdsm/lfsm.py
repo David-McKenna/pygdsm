@@ -1,5 +1,6 @@
 import numpy as np
 import healpy as hp
+from astropy import units
 from scipy.interpolate import interp1d
 
 from .component_data import LFSM_FILEPATH
@@ -74,15 +75,16 @@ class LowFrequencySkyModel(BaseSkyModel):
         else:
             map_out = np.zeros(shape=(1, hp.nside2npix(self.nside)))
 
+        freqs = (freqs_mhz * units.Unit('MHz')).to(self.freq_unit).value
+
         for ff in range(map_out.shape[0]):
             for i, compFunc in enumerate(self.compFuncs):
-                map_out[ff] += compFunc(np.log(freqs_mhz[ff])) * self.pca_map[:, i]
-            map_out[ff] *= np.exp(self.scaleFunc(np.log(freqs_mhz[ff])))
+                map_out[ff] += compFunc(np.log(freqs[ff])) * self.pca_map[:, i]
+            map_out[ff] *= np.exp(self.scaleFunc(np.log(freqs[ff])))
 
             map_out[ff] =  rotate_equatorial_to_galactic(map_out[ff])
 
         return map_out
-
 
 
 class LFSMObserver(BaseObserver):

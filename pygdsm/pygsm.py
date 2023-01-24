@@ -159,19 +159,19 @@ class GlobalSkyModel(BaseSkyModel):
         self.basemap = new_basemap
         self.update_interpolants()
         if self.generated_map_freqs is not None:
-            self.generate(self.generated_map_freqs.copy(), reset_cache = True)
+            self.generate(self.generated_map_freqs)
 
     def set_freq_unit(self, new_unit):
         self.freq_unit = new_unit
         self.update_interpolants()
         if self.generated_map_freqs is not None:
-            self.generate(self.generated_map_freqs.copy(), reset_cache = True)
+            self.generate(self.generated_map_freqs)
 
     def set_interpolation_method(self, new_method):
         self.interpolation_method = new_method
         self.update_interpolants()
         if self.generated_map_freqs is not None:
-            self.generate(self.generated_map_freqs.copy(), reset_cache = True)
+            self.generate(self.generated_map_freqs)
 
 
 class GSMObserver(BaseObserver):

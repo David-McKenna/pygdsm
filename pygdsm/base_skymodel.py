@@ -55,6 +55,9 @@ class BaseSkyModel(object):
         self.freq_unit = freq_unit
         self.data_unit = data_unit
 
+        self._cache_generated_map_data = None
+        self._cache_generated_map_freqs = None
+
         self.generated_map_data = None
         self.generated_map_freqs = None
 
@@ -78,23 +81,25 @@ class BaseSkyModel(object):
         """
 
         if reset_cache:
-            del self.generated_map_data
-            del self.generated_map_freqs
             self.generated_map_data = None
             self.generated_map_freqs = None
+            del self._cache_generated_map_data
+            del self._cache_generated_map_freqs
+            self._cache_generated_map_data = None
+            self._cache_generated_map_data = None
 
 
         # Convert value into the model's set frequency units
         freqs = np.array([freqs]).ravel() * units.Unit(self.freq_unit)
 
-        if self.generated_map_freqs is None:
+        if self._cache_generated_map_freqs is None:
             exisiting_map_freqs = 0
             freqs_to_generate = freqs.copy()
         else:
-            exisiting_map_freqs = self.generated_map_freqs.size
+            exisiting_map_freqs = self._cache_generated_map_freqs.size
             freqs_to_generate = []
             for freq in freqs:
-                if freq.value in self.generated_map_freqs.value:
+                if freq.value in self._cache_generated_map_freqs.value:
                     continue
                 freqs_to_generate.append(freq.value)
             freqs_to_generate = np.array(freqs_to_generate).ravel() * units.Unit(self.freq_unit)
@@ -104,23 +109,26 @@ class BaseSkyModel(object):
             map_out = self._generate(freqs_mhz).squeeze()
 
             if exisiting_map_freqs:
-                self.generated_map_data = np.resize(self.generated_map_data, (exisiting_map_freqs + len(freqs_to_generate), self.generated_map_data.shape[-1]))
-                self.generated_map_freqs = np.resize(self.generated_map_freqs, (exisiting_map_freqs + len(freqs_to_generate)))
+                self._cache_generated_map_data = np.resize(self._cache_generated_map_data, (exisiting_map_freqs + len(freqs_to_generate), self._cache_generated_map_data.shape[-1]))
+                self._cache_generated_map_freqs = np.resize(self._cache_generated_map_freqs, (exisiting_map_freqs + len(freqs_to_generate)))
             else:
-                self.generated_map_data = np.zeros_like(map_out)
-                self.generated_map_freqs = np.zeros_like(freqs_to_generate)
+                self._cache_generated_map_data = np.zeros_like(map_out)
+                self._cache_generated_map_freqs = np.zeros_like(freqs_to_generate)
 
-            if self.generated_map_data.ndim == 2:
-                self.generated_map_data[exisiting_map_freqs:, :] = map_out
-                self.generated_map_freqs[exisiting_map_freqs:] = freqs_to_generate
+            if self._cache_generated_map_data.ndim == 2:
+                self._cache_generated_map_data[exisiting_map_freqs:, :] = map_out
+                self._cache_generated_map_freqs[exisiting_map_freqs:] = freqs_to_generate
             else:
-                self.generated_map_data = map_out.copy()
-                self.generated_map_freqs = freqs_to_generate.copy()
+                self._cache_generated_map_data = map_out.copy()
+                self._cache_generated_map_freqs = freqs_to_generate.copy()
 
-        if freqs.size > 1 or self.generated_map_freqs.size > 1:
-            map_out = self.generated_map_data[[np.argwhere(self.generated_map_freqs == freq).item() for freq in freqs], :].squeeze()
+        if freqs.size > 1 or self._cache_generated_map_freqs.size > 1:
+            map_out = self._cache_generated_map_data[[np.argwhere(self._cache_generated_map_freqs == freq).item() for freq in freqs], :].squeeze()
         else:
-            map_out = self.generated_map_data
+            map_out = self._cache_generated_map_data
+
+        self.generated_map_data = map_out
+        self.generated_map_freqs = freqs.copy()
 
         return map_out
 
