@@ -20,7 +20,7 @@ with open("requirements_test.txt", 'r') as fh:
     test_requirements = fh.read().splitlines()
 
 setup(
-    name='pygdsm',
+    name='debug_dpypi_pygdsm',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
