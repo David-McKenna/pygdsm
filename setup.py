@@ -25,7 +25,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.5.4',
+    version='1.5.5',
 
     description='Python Global Sky Model of diffuse Galactic radio emission',
     long_description=long_description,
@@ -75,8 +75,6 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # Include the requirements*.txt for pypi
-    package_data={'': ['requirements*.txt']},
-    data_files=[('.', ['requirements*.txt'])],
     include_package_data=True,
 
     # List run-time dependencies here.  These will be installed by pip when
