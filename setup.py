@@ -76,6 +76,7 @@ setup(
 
     # Include the requirements*.txt for pypi
     package_data={'': ['requirements*.txt']},
+    data_files=[('.', ['requirements*.txt'])],
     include_package_data=True,
 
     # List run-time dependencies here.  These will be installed by pip when
