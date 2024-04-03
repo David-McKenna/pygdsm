@@ -74,6 +74,10 @@ setup(
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
+    # Include the requirements*.txt for pypi
+    package_data={'': ['requirements*.txt']},
+    include_package_data=True,
+
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
